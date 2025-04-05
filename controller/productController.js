@@ -1,5 +1,8 @@
 const productModel = require('../model/productModel')
 
+
+// Only admin can create, update and delete a product
+
 const createAProduct = async (req, res, next) => {
     const userRole = req.user.role
 if(userRole == "admin"){
@@ -53,7 +56,7 @@ if(userRole == "admin"){
        next({status:404, message:"No product with such ID"})
     }   
 }else{
-    res.status(500).send({message: "user not authorized"})
+    res.status(403).send({message: "user not authorized"})
 }
     
 }

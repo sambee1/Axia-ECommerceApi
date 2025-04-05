@@ -20,7 +20,21 @@ const userModel = new mongoose.Schema({
         type:String,
         required:true,
         enum:["admin", "user"]
-    }, 
+    },
+    cart:[
+         {
+                 productId:{
+                    type: mongoose.Schema.Types.ObjectId,
+                    
+                 },
+                 quantity:{
+                    type:Number,
+                    default: 0
+                 },
+                 
+                
+               }
+    ], 
     kyc:{
         country: {
             type: String,

@@ -1,65 +1,70 @@
-const cartModel = require("../model/cartModel")
+const userModel = require("../model/userModel")
 
-const createCart = async (req, res) => {
+/*The userModel comes with an empty array for cart.
+Each add-to-cart button click pushes the productId and quantity into the array using the updateCart function
+*/
+const updateCart = async (req, res, next) => {
+  
 
-const paramId = req.params.id
-const tokenId = req.user.id
-const {quantity} = req.body
-userCart = cartModel.findOne(paramId)
-    if(!userCart){
-        try {
-    const cart = new cartModel({
-        user: tokenId,
-        product:[{productId:paramId, quantity:quantity}]}
-        )
-    const savedCart = await cart.save()
-    res.send(savedCart).status(200)
-} catch (error) {
-    console.log(error) 
-
+    const paramId = req.params.id
+    const {quantity} = req.body
+    const user = req.user.id
+    const cart = req.user.cart
+   try{
+    const updateCart = await userModel.findByIdAndUpdate(user, {
+        $push:{
+            cart: [{productId:paramId, quantity:quantity}]        },
+    }, {new:true, runValidators:true} )
+    res.status(200).json(updateCart)
+   }catch(error){
+     next({status:404, message:"No cart with such ID"})
+   }
 }
-
-    
-}else{
-    cartModel.insertOne({})
-}
-}
-
 
 
 const getCart = async (req, res) => {
-    try {
-        const {id} = req.params
-        const cart = await cartModel.findById(id)
-        if(!cart){
-            return res.json({Message: "Cart not found"}).status(404)
-        }
-        res.json(cart).status(200)
-    } catch (error) {
-     next({status:404, message:"No cart with such ID"})  
+   try {
+    const user = req.user.id
+    const cart = await userModel.findById(user)
+    if(!cart){
+        return res.json({Message: "No item in Cart"}).status(404)
+    }
+    res.json(cart.cart)
+   } catch (error) {
+    console.log(error)
+   }
+}
+
+// delete one item from the cart
+const deleteCartItem = async (req, res) => {
+    const paramId = req.params.id
+    const user = req.user.id
+    console.log(paramId)
+    try{
+        const updateCart = await userModel.findByIdAndUpdate({_id:user}, {
+            $pull:{
+                cart:{_id:paramId}
+            }
+        })
+        res.json(updateCart.cart).status(200)
+    }catch(error){
+        console.log(error        )
     }
 }
 
-const updateCart = async (req, res, next) => {
-    try {
-        const updates = req.body
-        const {id} = req.params
-        const updateCart = await cartModel.findByIdAndUpdate(id, updates, {new:true, runValidators:true})
-        if(!updateCart) return next ({status:404, message:"No cart with such ID"})
-            res.status(200).json(updateCart)
-    } catch (error) {
-       next({status:404, message:"No cart with such ID"})
-    }   
-}
 
-const deleteCart = async (req, res) => {
-    const {id} = req.params
+
+const deleteCompleteCart = async (req, res, next) => {
+    const user = req.user.id
     try{
-        await cartModel.findByIdAndDelete(id)
-        res.status(200).json({mess:"Cart deleted"})
+        const updateCart = await userModel.findByIdAndUpdate({_id:user}, {
+            $set:{
+                cart: []        },
+        } )
+        res.status(200).json(updateCart.cart)
     } catch (err){
-        next({status:404, message:"No cart to be deleted with such ID"})
+        next({status:404, message:"Error deleting cart"})
     }
     
 }
-module.exports = {createCart, getCart,  updateCart, deleteCart}
+module.exports = {getCart,  updateCart, deleteCompleteCart, deleteCartItem}
